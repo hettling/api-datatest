@@ -18,4 +18,6 @@ my $decoded_json = decode_json( $json );
 
 my $num_results = $decoded_json->{'totalSize'};
 
-ok( $num_results == 26294 )
+my $expected = 26294;
+ok( $num_results == $expected )
+
