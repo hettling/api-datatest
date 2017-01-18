@@ -8,6 +8,6 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
 	'PREREQ_PM' => {
 		'JSON'       => 0,
-		'LWP_Simple' => 0,
+		'LWP::Simple' => 0,
 	}
 );
