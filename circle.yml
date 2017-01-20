@@ -1,6 +1,6 @@
 dependencies:
   post:
-    - apt-get install cpanminus
+    - sudo apt-get install cpanminus
 
 test:
   override:
