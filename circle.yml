@@ -1,3 +1,7 @@
+dependencies:
+  post:
+    - apt-get install cpanminus
+
 test:
   override:
     - cpanm --notest --installdeps .
