@@ -1,6 +1,6 @@
 machine:
   environment:
-    PERL5LIB: ${PERL5LIB}:~/perl5/lib/perl5
+    PERL5LIB: /home/ubuntu/perl5/lib/perl5
 
 dependencies:
   post:
