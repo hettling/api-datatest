@@ -1,7 +1,11 @@
+machine:
+  environment:
+    PERL5LIB: ${PERL5LIB}:~/perl5/lib
+
 dependencies:
   post:
-    - sudo apt-get install build-essential
-    - cpan --notest --installdeps .
+    - sudo apt-get install cpanm
+    - cpanm --notest --installdeps .
 test:
   override:
     - perl Makefile.PL && make test
