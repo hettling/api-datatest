@@ -1,7 +1,7 @@
 language: perl
 perl:
-  - "5.16"	
+  - "5.16"
 
-test:	
-  override:  
-	- cpanm --notest --installdeps .	
+test:
+  override:
+    - cpanm --notest --installdeps .
