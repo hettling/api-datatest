@@ -15,8 +15,9 @@ use Data::Dumper;
 my $test_dashboard = "http://145.136.242.166";
 my $test = "http://145.136.242.170";
 my $dev = "http://145.136.242.164";
+my $mytest = "http://10.1.42.177";
 
-my $base_url = $test . ":8080/v2/";
+my $base_url = $dev . ":8080/v2/";
 
 # my $url = "http://api.biodiversitydata.nl/v0/specimen/search/dwca/?collection=$c";
 #  # v2 test dashboard
@@ -29,7 +30,7 @@ my $collections = %table->{'collection'};
 
 	for my $c ( @{ $collections } ) {
 		ok ( $c, "Collection is $c" );
-
+		
 		my $query = $base_url . "specimen/dwca/query/?collection=$c"; 
 		print "Executing query $query \n";
 		
@@ -38,15 +39,15 @@ my $collections = %table->{'collection'};
 		my $response = LWP::UserAgent->new->get( $query, 'Accept-Encoding' => $can_accept );
 
 		# check status
-		ok ( $response->is_success, "Checking HTTP status" );
-		print $response->decoded_content . "\n";
-
-		# write zip response to file
-		my $filename = 'test.zip';
-		open my $fh, '>', $filename, or die $!;
-		print $fh $response->decoded_content;
-		close $fh;
-		ok ( -s $filename, "File $filename not empty" ); 
+		if ( ok ( $response->is_success, "Checking HTTP status" ) ) {
+			
+			# write zip response to file
+			my $filename = 'test.zip';
+			open my $fh, '>', $filename, or die $!;
+			print $fh $response->decoded_content;
+			close $fh;
+			ok ( -s $filename, "File $filename not empty" ); 
+		}
 
 		# unzip file
 		
