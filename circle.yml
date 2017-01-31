@@ -4,6 +4,7 @@ machine:
 
 dependencies:
   post:
+    - sudo apt-get update
     - sudo apt-get install cpanminus maven git java-common
     - git clone https://github.com/gbif/dwca-validator.git $HOME/dwca-validator
     - cd $HOME/dwca-validator
