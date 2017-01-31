@@ -26,9 +26,9 @@ my $base_url = $dev . ":8080/v2/";
 # Get all collections
 my $datafile = 't/testdata/collections.tsv';
 my %table = _read_data( $datafile );
-my $collections = %table->{'collection'};
+my @collections = @{ $table{'collection'} };
 
-	for my $c ( @{ $collections } ) {
+	for my $c ( @collections ) {
 		ok ( $c, "Collection is $c" );
 		
 		my $query = $base_url . "specimen/dwca/query/?collection=$c"; 
