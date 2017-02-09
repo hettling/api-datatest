@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-# use lib 'lib';
+use lib 'lib';
 use ExtUtils::MakeMaker;
 
 

@@ -6,32 +6,39 @@ use Test::More 'no_plan';
 use LWP::Simple;
 use JSON;
 use JSON::Path;
+use File::Temp qw(tempfile);
+
 use Data::Dumper;
+
+##http:/api.biodiversitydata.nl/v0/specimen/search/dwca/?collection=mammalia
 
 # Get Spreadsheet data
 # my $sheet_url = "https://docs.google.com/spreadsheets/d/1Fb2tvVBU8-YTNAgklAPNV9iiiy2ZQSqQfZkhrJ0A1sQ";
 # $sheet_url .= "/pub?output=tsv";
 
+my $apiversion = "v2";
+my @types = qw( taxon ); ## qw( taxon specimen );
+
 my $test_dashboard = "http://145.136.242.166";
 my $test = "http://145.136.242.170";
 my $dev = "http://145.136.242.164";
-my $mytest = "http://10.1.42.177";
-
-my $base_url = $dev . ":8080/v2/";
-
 # my $url = "http://api.biodiversitydata.nl/v0/specimen/search/dwca/?collection=$c";
-#  # v2 test dashboard
-# http://145.136.242.164/ # v2 dev
+
+my $base_url = $test . ":8080/$apiversion/";
 
 # Get all collections
 my $datafile = 't/testdata/collections.tsv';
 my %table = _read_data( $datafile );
 my @collections = @{ $table{'collection'} };
 
+for my $type ( @types ) {
 	for my $c ( @collections ) {
-		ok ( $c, "Collection is $c" );
+		ok ( $c, "Testing dwca download for $type in collection $c" );
 		
-		my $query = $base_url . "specimen/dwca/query/?collection=$c"; 
+		# my $query = $base_url . "$type/dwca/query/?collection=$c"; 
+		# my $query = "http://api.biodiversitydata.nl/v0/specimen/search/dwca/?collection=$c";
+		my $query = $base_url . "$type/dwca/dataset/$c"; 
+		
 		print "Executing query $query \n";
 		
 		# make API request to donwload zip content
@@ -42,15 +49,15 @@ my @collections = @{ $table{'collection'} };
 		if ( ok ( $response->is_success, "Checking HTTP status" ) ) {
 			
 			# write zip response to file
-			my $filename = 'test.zip';
-			open my $fh, '>', $filename, or die $!;
+			my ($fh, $filename) = tempfile( CLEANUP=>1 );
 			print $fh $response->decoded_content;
 			close $fh;
 			ok ( -s $filename, "File $filename not empty" ); 
-		}
-
-		# unzip file
-		
+						
+			my $is_valid = _validate_dwca( $filename );
+			ok( $is_valid, "File $filename is a valid darwin core archive" );
+		}		
+	}
 }
 
 # Read data from tsv file. Returns hash.
@@ -58,7 +65,7 @@ my @collections = @{ $table{'collection'} };
 sub _read_data {
 	my $path = shift;
 
-	open my $fh, '<', $path;
+	open my $fh, '<', $path or die $!;
 	my @lines = <$fh>;
 	close $fh;
 
@@ -118,4 +125,22 @@ sub _validate_online {
 	my $jp = JSON::Path->new("\$.valid");
 	my $val = $jp->value( $response->decoded_content );
 	ok ( $val==1, "Response is a valid Darwin Core Archive" );	
+}
+
+
+# use dwca-validator (https://github.com/gbif/dwca-validator)
+# to validate a given darwin core archive file in zip 
+# format
+sub _validate_dwca {
+	my $filename = shift;
+	my $is_valid = 0;
+
+	# this string is in output when file is valid
+	my $correct_output = "The Dwc-A file looks valid according to current validation chain\.";
+	my $output = `dwca-validator -s ${filename} 2>&1`;
+	if ( $output =~ /$correct_output/ ) {
+		$is_valid = 1;
+	}
+	
+	return $is_valid;				
 }
