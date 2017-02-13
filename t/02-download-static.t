@@ -1,11 +1,9 @@
 #!/usr/bin/perl
-use strict;
 use warnings;
 
 BEGIN {
 	our @plan = $ENV{'TEST_DWCA'} ? 'no_plan' : 'skip_all' => 'env var TEST_DWCA not set';
 }
-
 
 use Test::More @plan;
 
