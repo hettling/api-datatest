@@ -1,6 +1,9 @@
 language: perl
 perl:
-  - "5.16"	
-
-install:	
-  - cpanm --notest --installdeps .	
+- '5.16'
+install:
+- cpanm --notest --installdeps .
+before_install:
+- openssl aes-256-cbc -K $encrypted_924227d5d0a5_key -iv $encrypted_924227d5d0a5_iv
+  -in google_spreadsheet.session.enc -out google_spreadsheet.session -d
+	
