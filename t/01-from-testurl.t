@@ -29,7 +29,7 @@ my @worksheets = qw( filter search metadata data aggregation static-download dyn
 for my $worksheet ( @worksheets ) {		
 
 	my @rows = $gio->get_worksheet_rows( $spreadsheet, $worksheet );	
-	# print Dumper(\@rows);
+	print Dumper(\@rows);
 
 	for my $row_idx ( 0..$#rows ) {
 		my $r = $rows[$row_idx];		

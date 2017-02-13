@@ -1,7 +1,13 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Test::More 'no_plan';
+
+BEGIN {
+	our @plan = $ENV{'TEST_DWCA'} ? 'no_plan' : 'skip_all' => 'env var TEST_DWCA not set';
+}
+
+
+use Test::More @plan;
 
 use LWP::Simple;
 use JSON;
