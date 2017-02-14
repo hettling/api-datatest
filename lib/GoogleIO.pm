@@ -77,31 +77,31 @@ sub get_worksheet_rows {
 	my $ncol = scalar( keys ( %{ $rows[0] } ) );
 	my @headers = map {$_->content} $worksheet->cells( { 'min-row' => 1, 'max-row' => 1, 
 														 'min-col' => 1, 'max-col' => $ncol} );	
-	# substitute headers
+ 	# substitute headers
 	for my $row ( @rows ) {
 	  HEADER: for my $header ( @headers ) {			
 		  for my $k ( keys %{$row} ) {
-			  ## strip whitespace and special characters for comparison
+			  # strip whitespace and special characters for comparison			  
 			  (my $stripped = lc  $header) =~s/[^a-zA-Z0-9]//g ;
-			  if ( $stripped =~ $k ) { 
-				  if ( ! ($header eq $k) ) {
+			  # also substitute the ones that were set to lower case
+			  if ( $stripped =~ $k || (lc ($header) =~ $k) ) { 
+				  if ( ! ($header eq $k) ) {					  					  
 					  $row->{ $header } = $row->{ $k };
-					  delete $row->{ $k };
+					  delete $row->{ $k };					  
 					  next HEADER;
-				  }
-				  
+					  ##print Dumper($row);
+				  }				  
 			  }
+			  
 		  }		  
-	  } 
+	  }
 	}
-	
 	return @rows;	
 }
 
-
 ## puts a value into the 'result' column for a given row number
 sub set_result {
-	my ( $self, $spreadsheetname, $worksheetname, $row, $value ) = @_;
+	my ( $self, $spreadsheetname, $worksheetname, $row_idx, $colname, $value ) = @_;
 
 	my $service = $self->_restore_service();
 
@@ -109,10 +109,52 @@ sub set_result {
 	my $spreadsheet = $service->spreadsheet( { title => $spreadsheetname } );
 	my $worksheet = $spreadsheet->worksheet( { title => $worksheetname } );	
 
-	# Caution: Hard-coded column index
-	my $col_idx = 7;
+	my @rows = map { $_->content } $worksheet->rows;
 	
-	$worksheet->batchupdate_cell( { col=>$col_idx, row=>$row, input_value=>$value } );	
+	my $ncol = scalar( keys ( %{ $rows[0] } ) );
+
+	# find column index
+	my @headers = map {$_->content} $worksheet->cells( { 'min-row' => 1, 'max-row' => 1, 
+														 'min-col' => 1, 'max-col' => $ncol} );
+
+	
+	my( $col_idx )= grep { $headers[$_] eq $colname } 1..$ncol;
+	$col_idx += 1;
+	# Caution: Hard-coded column index	
+	##my $col_idx = 7; # default is result column
+	##$col_idx = 8	if ( $column eq "error");
+	
+	$worksheet->batchupdate_cell( { col=>$col_idx, row=>$row_idx, input_value=>$value } );	
+}
+
+## write a worksheet to file, with sorted column names
+sub write_sheet_tsv {
+	my ( $self, $spreadsheetname, $worksheetname, $filename ) = @_;
+
+	# get data
+	my @rows = $self->get_worksheet_rows( $spreadsheetname, $worksheetname );
+
+	# get keys
+	my $r = $rows[0];
+	my @keys = sort( keys( %$r ) );
+
+	# write to file
+	open my $fh, '>', $filename or die $!;
+
+	# print header
+	for my $k ( @keys ) {
+		print $fh $k . "\t";
+	}
+	print $fh "\n";
+
+	# iterate over rows and write data to file
+	for my $row ( @rows ) {
+		for my $k ( @keys ) {
+			print $fh $row->{$k} . "\t";
+		}
+		print $fh "\n";
+	}
+	close $fh;
 }
 
 ## restore service from token file
