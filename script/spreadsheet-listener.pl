@@ -18,29 +18,29 @@ my $spreadsheet = 'tests-phase2';
 
 # Check following worksheets if changes occured
 my @worksheets = qw( filter search metadata data aggregation static-download dynamic-download );
-# For the DWCA tests on two sheets, we will need a different test
-my @dwca_sheets = qw( static-download dynamic-download );
 
 # write output to logfile
 open my $fh, '>>', "listener.log" or die $!;
 
-my %sheets = ('tests-phase2'=>'filter', 'FilterQueries-specimen'=>'Sheet1');
+# print date and time to logfile
+print $fh localtime() . " BEGIN $0 called \n";
 
-for my $k ( keys(%sheets) ) {
-	my $spreadsheet = $k;
-	my $worksheet = $sheets{$k};
-	
+for my $worksheet ( @worksheets ) {
+
 	# Compare contents of cached and current file
-	if ( is_updated( $gio, $spreadsheet, $worksheet ) ) {
-		print $fh "Cached file and current file $current_sheet equal, no action taken \n";
+	if ( ! $gio->is_updated( $spreadsheet, $worksheet ) ) {
+		print $fh localtime() . " No changes in $spreadsheet $worksheet, no action taken \n";
 	} 
-	else {
-		if ( $spreadsheet eq "FilterQueries-specimen" ) {
-			$ENV{'TEST_SPEC'}=1;
-		}
-		
-		print $fh "Remote spreadsheet was updated, executing trigger $trigger_script \n";
-		system( "sh $trigger_script" );
-		print $fh "Trigger script called\n";
+	else {		
+		print $fh localtime() . " Remote worksheet '$worksheet' was updated, executing trigger $trigger_script \n";
+		# Export environment variable from which the trigger will get the worksheet name to process
+		$ENV{'API_TESTTOOL_T1'} = $worksheet;
+		print $fh localtime  . " Setting API_TESTTOOL_T1=$worksheet \n";
+		my $ret = system( "sh $trigger_script" ) and die $!;
+		print $fh localtime() . " Trigger script $trigger_script called, return value: $ret \n";
 	}
 }
+
+print $fh localtime  . " DONE $0 \n";
+close $fh;
+

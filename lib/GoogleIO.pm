@@ -98,13 +98,12 @@ sub get_worksheet_rows {
 					  next HEADER;
 					  ##print Dumper($row);
 				  }				  
-			  }
-			  
+			  }			  
 		  }		  
 	  }
 	}
 		
-	return @rows;	
+	return @rows;
 }
 
 sub is_updated {
@@ -116,14 +115,15 @@ sub is_updated {
 	# write current worksheet to tsv
 	my $current_sheet = "current-sheet.tsv";
 	$self->write_sheet_tsv( $spreadsheet, $worksheet, $current_sheet );
-	
+
+	print "Comparing $cached_sheet, $current_sheet \n";
 	my $result = compare( $cached_sheet, $current_sheet);
 	##unlink( $current_sheet );
-	system( "mv $current_sheet $cached_sheet");
 	# make the current file the cached file
-	## $gio->write_sheet_tsv( $spreadsheet, $worksheet, $cached_sheet );
+   	system( "mv $current_sheet $cached_sheet");
+	##$self->write_sheet_tsv( $spreadsheet, $worksheet, $cached_sheet );
 		
-	return $result
+	return $result;
 }
 
 ## puts a value into the 'result' column for a given row number
@@ -156,7 +156,7 @@ sub set_result {
 ## write a worksheet to file, with sorted column names
 sub write_sheet_tsv {
 	my ( $self, $spreadsheetname, $worksheetname, $filename ) = @_;
-	
+
 	# get data
 	my @rows = $self->get_worksheet_rows( $spreadsheetname, $worksheetname );
 
@@ -181,6 +181,7 @@ sub write_sheet_tsv {
 		print $fh "\n";
 	}
 	close $fh;
+	##die;
 }
 
 ## restore service from token file
