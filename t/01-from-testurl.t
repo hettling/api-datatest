@@ -51,11 +51,16 @@ for my $row_idx ( 0..$#rows ) {
 	  # serialize response to see if it is a zip
 	  my $response_file = _save_response( $response_str );
 	  my $is_archive = _is_zipped( $response_file );
-	  
 	  my $test = ok( $response->is_success,  "$teststr Response code ok" );
+	  
 	  # add to error string if not succesful
 	  $error .= $response_str . "\n" if ! $test;		  
 	  $all_ok &&= $test;
+	  
+	  if ( grep {$_ eq 'response_code'} keys(%$r) ) {
+		  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_code", $response->status_line );
+	  }
+	  next REP if ! $test;
 	  
 	  # send json reponse to google spreadsheet, if column exists
 	  if ( grep {$_ eq 'response_json'} keys(%$r) ) {
