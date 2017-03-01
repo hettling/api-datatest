@@ -116,7 +116,7 @@ for my $row_idx ( 0..$#rows ) {
 		  my $is_valid = _validate_dwca( $response_file );
 		  $test = ok ( $is_valid, "Response is a valid Darwin core archive" );
 		  $all_ok &&= $test;
-		  $error .= "Reponse not a valid Darwin core archive \n" if ! $test;
+		  $error .= "Reponse not a valid Darwin core archive" if ! $test;
 		  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_validation_result", $is_valid ? "OK" : "FAIL" );
 	  }
 	  next REP if ! $all_ok;
