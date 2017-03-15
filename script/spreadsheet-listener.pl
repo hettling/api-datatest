@@ -23,7 +23,7 @@ my @worksheets = qw( filter search metadata data aggregation static-download dyn
 open my $fh, '>>', "listener.log" or die $!;
 
 # print date and time to logfile
-print $fh localtime() . " BEGIN $0 called \n";
+print $fh localtime . " BEGIN $0 called \n";
 
 for my $worksheet ( @worksheets ) {
 
