@@ -10,6 +10,7 @@ use LWP::Simple;
 use JSON;
 use JSON::Path;
 use Digest::MD5 'md5_hex';
+use List::MoreUtils qw 'uniq';
 use File::Temp qw(tempfile tempdir);
 use Data::Dumper;
 
@@ -31,9 +32,10 @@ my $gio = GoogleIO->new( 'token' => $token  );
 my $spreadsheet = 'tests-phase2';
 my $worksheet = $ENV{'API_TESTTOOL_T1'};
 
-
-
 my @rows = $gio->get_worksheet_rows( $spreadsheet, $worksheet );	
+
+## Store the messages that will be sent back to the spreadsheet!
+my @msg = ();
 
 for my $row_idx ( 0..$#rows ) {
 	my $r = $rows[$row_idx];		
@@ -44,7 +46,7 @@ for my $row_idx ( 0..$#rows ) {
 	my $repeats =  $r->{'repeats'} ||  0;
   REP: for my $rep ( 1..$repeats ) {
 	  
-	  my $teststr = "Test : '$worksheet', tesno: $test_nr, repeat $rep:";		  			
+	  my $teststr = "Test : '$worksheet', testno: $test_nr, repeat $rep:";		  			
 	  my $response = $ua->get( $r->{'test_url'} );		  
 	  my $response_str = $response->decoded_content;
 	  ## print $response->status_line . "\n";
@@ -58,18 +60,18 @@ for my $row_idx ( 0..$#rows ) {
 	  $all_ok &&= $test;
 	  
 	  if ( grep {$_ eq 'response_code'} keys(%$r) ) {
-		  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_code", $response->status_line );
+		  push @msg, [$row_idx+2, "response_code", $response->status_line];
 	  }
 	  next REP if ! $test;
 	  
 	  # send json reponse to google spreadsheet, if column exists
 	  if ( grep {$_ eq 'response_json'} keys(%$r) ) {
-			  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_json", $response_str );
+		  push @msg, [$row_idx+2, "response_json", $response_str];
 	  }
 	  # Comparisons to baseline
 	  # Get md5 sum and compare to baseline, if presen
 	  my $md5 = md5_hex( $response_str );
-	  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_md5", $md5 );
+	  push @msg, [$row_idx+2, "response_md5", $md5];
 	  if ( my $baseline_md5 = $r->{'baseline_md5'} ) {
 		  $test = ok ( $md5 eq $baseline_md5, "$teststr Response md5 matches baseline md5" );
 		  $all_ok &&= $test;
@@ -101,7 +103,7 @@ for my $row_idx ( 0..$#rows ) {
 	  if ( grep {$_ eq 'response_total_size'} keys (%$r) ) {
 		  my $jp = JSON::Path->new( "\$.totalSize" );
 		  my $response_total_size = $jp->value( $response_str );
-		  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_total_size", $response_total_size );
+		  push @msg, [$row_idx+2, "response_total_size", $response_total_size];
 		  if ( my $baseline_total_size = $r->{'baseline_total_size'} ) {		
 			  $test = ok ( $response_total_size == $baseline_total_size, "$teststr total size $response_total_size == $baseline_total_size");
 			  $all_ok &&= $test;
@@ -117,18 +119,33 @@ for my $row_idx ( 0..$#rows ) {
 		  $test = ok ( $is_valid, "Response is a valid Darwin core archive" );
 		  $all_ok &&= $test;
 		  $error .= "Reponse not a valid Darwin core archive" if ! $test;
-		  $gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "response_validation_result", $is_valid ? "OK" : "FAIL" );
+		  push @msg, [$row_idx+2, "response_validation_result", $is_valid ? "OK" : "FAIL"];
 	  }
 	  next REP if ! $all_ok;
   }
 	my $result = $all_ok ? 'OK' : 'FAIL';
 	$result = 'SKIPPED' if ! $r->{'repeats'};
-	$gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "overall_test_result", $result ); # Caution: offset
-	$gio->set_result( $spreadsheet, $worksheet, $row_idx+2, "reported_error", $error ); # Caution: offset
+	push @msg, [$row_idx+2, "overall_test_result", $result];
+	push @msg, [$row_idx+2, "reported_error", $error];
+
+	my $num = $row_idx+1;
+	if (not $num % 30) { ## caution, magic number
+		_flush_results( $spreadsheet, $worksheet, $gio, @msg ) 
+	}
+	
 }	
 
+_flush_results( $spreadsheet, $worksheet, $gio, @msg );
 
-
+## send results to google sheets
+sub _flush_results {
+	my ($spreadsheet, $worksheet, $gio, @msg) = @_;
+	# get values that will be sent back to google sheet
+	my @r = map { $_->[0] } @msg;
+	my @c = map { $_->[1] } @msg;
+	my @v = map { $_->[2] } @msg;
+	$gio->set_result( $spreadsheet, $worksheet, \@r, \@c, \@v ); 
+}
 # save response to file
 sub _save_response {
 	my $response = shift;

@@ -128,29 +128,51 @@ sub is_updated {
 
 ## puts a value into the 'result' column for a given row number
 sub set_result {
-	my ( $self, $spreadsheetname, $worksheetname, $row_idx, $colname, $value ) = @_;
+	my ( $self, $spreadsheetname, $worksheetname, $row_indices, $colnames, $values ) = @_;
 
+	my @row_idx = @{ $row_indices };
+	my @cols = @{ $colnames };
+	my @vals = @{ $values };
+
+	if ( ! scalar(@row_idx) == scalar(@vals) ) {
+		die('Number of rows must equal number of values to update');
+	}
+	
 	my $service = $self->_restore_service();
 
 	# Get desired workseet
 	my $spreadsheet = $service->spreadsheet( { title => $spreadsheetname } );
 	my $worksheet = $spreadsheet->worksheet( { title => $worksheetname } );	
 
-	my @rows = map { $_->content } $worksheet->rows;
-	
-	my $ncol = scalar( keys ( %{ $rows[0] } ) );
-
 	# find column index
+	my @rows = map { $_->content } $worksheet->rows;	
+	my $ncol = scalar( keys ( %{ $rows[0] } ) );
 	my @headers = map {$_->content} $worksheet->cells( { 'min-row' => 1, 'max-row' => 1, 														 
 														 'min-col' => 1, 'max-col' => $ncol} );
-	if ( ! grep (/$colname/, @headers) ) {
-		die("No header found for Column $colname");
+	for my $colname( @cols ) {
+		if ( ! grep (/$colname/, @headers) ) {
+			die("No header found for Column $colname");
+		}
 	}
 
-	my( $col_idx )= grep { $headers[$_] eq $colname } 0..$ncol-1;
-	$col_idx += 1;
+	## my( $col_idx )= grep { $headers[$_] eq $colname } 0..$ncol-1;
+	##my $col_idx = map { grep { $headers[$_] eq $colname } 0..$ncol-1 } @cols;
+	my @col_idx;
+	for my $colname ( @cols ) {
+		my( $col_idx )= grep { $headers[$_] eq $colname } 0..$ncol-1;
+		$col_idx += 1;
+		push @col_idx, $col_idx;
+	}
+	##$col_idx += 1;
+	my @update_hashs;
+	for my $i ( 0..$#vals ) {
+		my $hr = { col=>$col_idx[$i], row=>$row_idx[$i], input_value=>$vals[$i] };
+		push @update_hashs, $hr;
+	}
 	
-	$worksheet->batchupdate_cell( { col=>$col_idx, row=>$row_idx, input_value=>$value } );	
+	## print Dumper( \@update_hashs );
+	$worksheet->batchupdate_cell( @update_hashs );
+	## $worksheet->batchupdate_cell( { col=>$col_idx, row=>$row_idx, input_value=>$value } );	
 }
 
 ## write a worksheet to file, with sorted column names
