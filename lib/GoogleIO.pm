@@ -214,8 +214,8 @@ sub _restore_service {
 	my $session = retrieve( $t );
 	
 	my $oauth2 = Net::Google::DataAPI::Auth::OAuth2->new(
-		client_id => '261022607882-tuq7f4hdju3n3dspqvpia3lp50hhhdlr.apps.googleusercontent.com',
-		client_secret => 'WdpVp0kXTLXRyJNG94fjWlz3',
+		client_id => 'xxx',
+		client_secret => 'xxx',
 		scope => ['http://spreadsheets.google.com/'],
 		);
 	
